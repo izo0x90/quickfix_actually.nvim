@@ -32,6 +32,7 @@
 -- ":cprev<CR>zz:QFUnMarkAll<CR>:QFMarkCurrentLine<CR><C-w>w",
 --------------------------------------------------------------------------------
 local M = {}
+local cdo_templates = require("quickfix_actually.default_templates")
 
 local function nav_c(cmd)
   local succsess, result = pcall(vim.cmd, cmd)
@@ -66,20 +67,6 @@ local ccommands= {
   find_replace = "s///"
 }
 
-local cdo_templates = {
-  replace_t = { "cdo ", "s/",
-                { type = "input", prompt = "Search for >" },
-                "/",
-                { type = "input", prompt = "Replace with >" },
-                "/c | update"
-              },
-  -- Change below vvvv
-  replace = ccommands.cdo .. ccommands.find_replace .. ccommands.save,
-  replace_conf = ccommands.cdo .. ccommands.find_replace .. "c" .. ccommands.save,
-  file_replace = ccommands.fdo .. "%" .. ccommands.find_replace .. "g" .. ccommands.save,
-  file_replace_conf = ccommands.fdo .. "%" .. ccommands.find_replace .. "gc" .. ccommands.save,
-}
-
 local function build_command(template)
   local command = ""
 
@@ -109,7 +96,7 @@ local function send_to_cmd_hist(command_string)
 end
 
 local function replace_mode() 
-  send_to_cmd_hist(build_command(cdo_templates.replace_t))
+  send_to_cmd_hist(build_command(cdo_templates.replace_confirm))
 end
 
 local function better_qf_keys()
@@ -130,7 +117,7 @@ local function better_qf_keys()
   vim.keymap.set("n", "L", ":cnewer<CR>", { remap = false, buffer = cur_buf })
   vim.keymap.set("n", "i", ":set modifiable<CR>", { remap = false, buffer = cur_buf })
   vim.keymap.set("n", "r", replace_mode, { remap = false, buffer = cur_buf })
-  vim.keymap.set("n", "R", cdo_templates.replace, { remap = false, buffer = cur_buf })
+  -- vim.keymap.set("n", "R", cdo_templates.replace, { remap = false, buffer = cur_buf })
   vim.keymap.set("n", "<C-s>", csave, { remap = false, buffer = cur_buf })
 end
 
@@ -139,11 +126,7 @@ function M.register_global_key_bindings()
 	vim.keymap.set("n", "<LEADER>qo", ":copen<CR>", { desc = "Open BetterQuickfix List", silent = true })
 end
 
-function M.init()
-  -- Add grep output format to change/ quickfix list
-  -- Why would parsing edited qfix list not be default, I would really like to hear the reasoning here
-	vim.go.errorformat = vim.go.errorformat .. ",%f|%l col %c|%m"
-
+function M.setup_autocommands()
 	vim.api.nvim_create_autocmd(
 		{
 			"FileType",
