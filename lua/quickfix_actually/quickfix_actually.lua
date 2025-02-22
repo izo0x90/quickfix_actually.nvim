@@ -32,7 +32,10 @@
 -- ":cprev<CR>zz:QFUnMarkAll<CR>:QFMarkCurrentLine<CR><C-w>w",
 --------------------------------------------------------------------------------
 local M = {}
+local HELP_TEXT = "Press <C-?> for help"
+local UI = require("quickfix_actually.ui")
 local cdo_templates = require("quickfix_actually.default_templates")
+
 
 local function nav_c(cmd)
   local succsess, result = pcall(vim.cmd, cmd)
@@ -92,38 +95,45 @@ end
 
 local function send_to_cmd_hist(command_string)
   vim.fn.histadd("cmd", command_string)
-  vim.fn.feedkeys("q:k")
+  vim.fn.feedkeys("q:")
 end
 
 local function replace_mode() 
   send_to_cmd_hist(build_command(cdo_templates.replace_confirm))
 end
 
-local function better_qf_keys()
-  local cur_buf = vim.api.nvim_get_current_buf()
-  vim.keymap.set(
-    "n",
-    "J",
-    nav_cnext,
-    { remap = false, buffer = cur_buf }
-  )
-  vim.keymap.set(
-    "n",
-    "K",
-    nav_cprev,
-    { remap = false, buffer = cur_buf }
-  )
-  vim.keymap.set("n", "H", ":colder<CR>", { remap = false, buffer = cur_buf })
-  vim.keymap.set("n", "L", ":cnewer<CR>", { remap = false, buffer = cur_buf })
-  vim.keymap.set("n", "i", ":set modifiable<CR>", { remap = false, buffer = cur_buf })
-  vim.keymap.set("n", "r", replace_mode, { remap = false, buffer = cur_buf })
-  -- vim.keymap.set("n", "R", cdo_templates.replace, { remap = false, buffer = cur_buf })
-  vim.keymap.set("n", "<C-s>", csave, { remap = false, buffer = cur_buf })
-end
-
 
 function M.register_global_key_bindings()
 	vim.keymap.set("n", "<LEADER>qo", ":copen<CR>", { desc = "Open BetterQuickfix List", silent = true })
+end
+
+local mappings = {
+  ["J"] = { nav_cnext, "Preview next item in list" },
+  ["K"] = { nav_cprev, "Preview previous item in list" },
+  ["H"] = { ":colder<CR>", "Goto previous quickfix list" },
+  ["L"] = { ":cnewer<CR>", "Goto next quickfix list" },
+  ["i"] = { ":set modifiable<CR>", "Enter edit mode to update list" },
+  ["r"] = { replace_mode, "Replace accross list items" },
+  ["e"] = { UI.execute_template_ui, "" },
+  -- { "R", cdo_templates.replace },
+  ["<C-s>"] = { csave, "Save list modifications" },
+  -- ["<C-h>"] = { help_ui, "This help" },
+}
+
+
+local function better_qf_keys()
+  local cur_buf = vim.api.nvim_get_current_buf()
+  local opt = { remap = false, buffer = cur_buf }
+  for mapping, meta in pairs(mappings) do
+    print(mapping, meta[1])
+    vim.keymap.set("n", mapping, meta[1], opt)
+  end
+end
+
+local function qf_open_setup()
+  better_qf_keys()
+  local cur_title = vim.w["quickfix_title"] or "" 
+  vim.cmd('let w:quickfix_title="' .. cur_title .. ' ' .. HELP_TEXT .. '"')
 end
 
 function M.setup_autocommands()
@@ -133,7 +143,7 @@ function M.setup_autocommands()
 		},
 		{
 			pattern = { "qf" },
-			callback = better_qf_keys,
+			callback = qf_open_setup,
 		}
 	)
 end
