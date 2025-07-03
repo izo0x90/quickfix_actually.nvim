@@ -5,7 +5,7 @@
 -- Maintainer:   Hristo G. <https://github.com/izo0x90>
 
 if vim.g.quickfix_actually_loaded == 1 then
-  return
+	return
 end
 vim.g.quickfix_actually_loaded = 1
 vim.g.quickfix_actually_debug = true -- TODO: Turn off
